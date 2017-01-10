@@ -1,86 +1,168 @@
-function imshow3dpair(ref,src,addstr)
+%function  notes_on_imshow3dpair(reffile,srcfile)
 
-if nargin==3
-    figtit=addstr;
-elseif nargin==2
-    figtit='';
-elseif nargin==1
-    error('Please provide two images')
+% This function is based on IMSHOW3D 
+% Other influences include IMSHOW3DFULL by Maysam Shahedi and supports
+% truecolor images, and ea_imshowpair.m by Todd Herrington Windowed view is 
+% adapted from MAGNIFY by Rick Hindman.
+%
+% Requires NifTi Toolbox
+% by Jimmy Shen
+% Available for Download at:
+% https://www.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image
+% -------------------------------------------------------------------------
+% Ari Kappel
+
+%% 
+%%%%%%%%% USER SETS PREFERENCES %%%%%%%%%%%%%
+% Set Prefs
+WLPref = 1024*1; % Default WLPref is 1024
+ZoomCoef = 0.05;  % Default ZoomCoef is 0.05
+toggleZoom = 'on';
+toggleAll=  'on'; % All except slider and Finetune
+
+toggleSlider = 'off';
+toggleFineTune = 'off';
+
+%% PREPARE IMAGES
+% Prepare Reference
+
+% Coregister with SPM Commands
+% Requires SPM12 in matlabpath
+% SPM Commands
+disp('Preparing images to show Coregistration...');
+
+% matlabbatch{1}.spm.spatial.coreg.estwrite.ref = reffile;
+% matlabbatch{1}.spm.spatial.coreg.estwrite.source = srcfile;
+% matlabbatch{1}.spm.spatial.coreg.estwrite.other = {''};
+% matlabbatch{1}.spm.spatial.coreg.estwrite.eoptions.cost_fun = 'nmi';
+% matlabbatch{1}.spm.spatial.coreg.estwrite.eoptions.sep = [4 2];
+% matlabbatch{1}.spm.spatial.coreg.estwrite.eoptions.tol = [0.02 0.02 0.02 0.001 0.001 0.001 0.01 0.01 0.01 0.001 0.001 0.001];
+% matlabbatch{1}.spm.spatial.coreg.estwrite.eoptions.fwhm = [7 7];
+% matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.interp = 1;
+% matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.wrap = [0 0 0];
+% matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.mask = 0;
+% matlabbatch{1}.spm.spatial.coreg.estwrite.roptions.prefix = 'r';
+
+% Executes the SPM commands
+% spm('defaults','FMRI');
+% spm_jobman('serial',matlabbatch);
+% clear matlabbatch jobs;
+
+ref=load_nii(reffile);
+% src=load_nii(['r' srcfile]);
+src=load_nii(srcfile);
+
+% Convert to UINT16
+if ~isa(ref.img,'uint16')
+    ref.img = uint16(ref.img);
+end
+if ~isa(src.img,'uint16')
+    src.img = uint16(src.img);
+end
+%     ref.img(:)=ea_nanzscore(ref.img(:)); %     ct.img(:)=ea_nanzscore(ct.img(:),'robust');
+    ref.img=(ref.img+2.5)/5; % set max/min to -/+ 2.5 standard deviations
+    ref.img(ref.img<0)=0; ref.img(ref.img>1)=1;
+%     src.img(:)=ea_nanzscore(src.img(:)); %     ref.img(:)=ea_nanzscore(ref.img(:),'robust');
+    src.img=(src.img+2.5)/5; % set max/min to -/+ 2.5 standard deviations
+    src.img(src.img<0)=0; src.img(src.img>1)=1;
+
+    jim=cat(4,0.1*src.img+0.9*ref.img,0.4*src.img+0.6*ref.img,0.9*src.img+0.1*ref.img);
+    % ----------------------------------------------------------
+    % edited by TH 2016-02-17 to add windowed coregistration view
+    % ----------------------------------------------------------
+    Img = cat(4,src.img,ref.img,jim);
+    % ----------------------------------------------------------
+
+
+% if ischar(ref)
+%     ref_filename = ref;
+%     % check if file exists
+%     if ~exist(ref_filename,'file')
+%         sprintf('%sr', ['File does not exist: Cannot find ' ref_filename])
+%         [ref_filename,ref_path] = uigetfile();
+%         ref_filename = fullfile(ref_path,ref_filename);
+%     end
+%     try
+%         nii = load_nii(ref_filename);
+%     catch
+%         nii = load_untouch_nii(ref_filename);
+%     end
+%         ref = nii.img;    
+% elseif isstruct(ref)
+%     if isfield(ref,'img')
+%         nii = ref; clear ref
+%         ref = nii.img;
+%     else
+%         error('Error in input file')
+%     end
+% end
+% 
+% % Prepare Source
+% if ischar(src)
+%     src_filename = src;
+%     % check if file exists
+%     if ~exist(src_filename,'file')
+%         sprintf('%sr', ['File does not exist: Cannot find ' src_filename])
+%         [src_filename,src_path] = uigetfile();
+%         src_filename = fullfile(src_path,src_filename);
+%     end
+%     try
+%         nii = load_nii(src_filename);
+%     catch
+%         nii = load_untouch_nii(src_filename);
+%     end
+%         src = nii.img;    
+% elseif isstruct(src)
+%     if isfield(src,'img')
+%         nii = src; clear src
+%         src = nii.img;
+%     else
+%         error('Error in input file')
+%     end
+% end
+% 
+% % Convert to UINT16
+% if ~isa(ref,'uint16')
+%     ref = uint16(ref);
+% end
+% if ~isa(src,'uint16')
+%     src = uint16(src);
+% end
+% 
+% % Check for 3d image
+% % dim = size(squeeze(nii));
+% if length(size(squeeze(ref)))<3 || length(size(squeeze(src)))<3
+%     error('Error: Please choose a 3-dimensional image')
+% end
+%     
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if isequal(toggleFineTune,'on')
+    lengthUI = 530;
+else
+    toggleFineTune = 'off';
+    lengthUI = 530-80;
+end
+if strcmp(toggleAll,'off')
+    toggleSlider = 'off';
+    toggleFineTune = 'off';
+    lengthUI = 530-80;
 end
 
-if ischar(ref)
-    ref_filename = ref;
-    % check if file exists
-    if ~exist(ref_filename,'file')
-        sprintf('%sr', ['File does not exist: Cannot find ' ref_filename])
-        [ref_filename,ref_path] = uigetfile();
-        ref_filename = fullfile(ref_path,ref_filename);
-    end
-    try
-        nii = load_nii(ref_filename);
-    catch
-        nii = load_untouch_nii(ref_filename);
-    end
-        ref = nii.img;    
-elseif isstruct(ref)
-    if isfield(ref,'img')
-        nii = ref; clear ref
-        ref = nii.img;
-    else
-        error('Error in input file')
-    end
+try
+    figtit = [ref_filename ' & ' src_filename];
+catch
+    figtit = '';
 end
 
-% Prepare Source
-if ischar(src)
-    src_filename = src;
-    % check if file exists
-    if ~exist(src_filename,'file')
-        sprintf('%sr', ['File does not exist: Cannot find ' src_filename])
-        [src_filename,src_path] = uigetfile();
-        src_filename = fullfile(src_path,src_filename);
-    end
-    try
-        nii = load_nii(src_filename);
-    catch
-        nii = load_untouch_nii(src_filename);
-    end
-        src = nii.img;    
-elseif isstruct(src)
-    if isfield(src,'img')
-        nii = src; clear src
-        src = nii.img;
-    else
-        error('Error in input file')
-    end
-end
-
-
-% Check for 3d image
-% dim = size(squeeze(nii));
-if length(size(squeeze(ref)))<3 || length(size(squeeze(src)))<3
-    error('Error: Please choose a 3-dimensional image')
-end
-    
-ref=single(ref);
-src=single(src);
-
-% Normalize window level
-norm_ref = ref/max(ref(:));
-norm_src = src/max(src(:));
-
-wim = cat(4,norm_ref,norm_src);
 
 %%
-% function  showpair( Img, addstring)
-% this function is based on IMSHOW3DFULL by Maysam Shahedi and supports
-% truecolor images. Windowed view is adapted from MAGNIFY by Rick Hindman.
-% 
-% Todd Herrington, 2016-03-16
-
-Img = wim;
 isp=figure('color','k','Name',figtit,'NumberTitle','off','MenuBar','none','DockControls','off','ToolBar','none');
-ea_maximize(isp);
+drawnow
+jFig = get(handle(isp), 'JavaFrame'); 
+jFig.setMaximized(true);
+
 Img=single(Img);
 sno = size(Img);  % image size
 sno_a = sno(3);  % number of axial slices
@@ -95,7 +177,7 @@ sno = sno_a;
 global InitialCoord;
 
 MinV = 0;
-MaxV = ea_nanmax(Img(:));
+MaxV = dbs_nanmax(Img(:));
 LevV = (double( MaxV) + double(MinV)) / 2;
 Win = double(MaxV) - double(MinV);
 WLAdjCoe = (Win + 1)/1024;
@@ -203,36 +285,54 @@ YImage=1:size(Img,2);
         showhelptext;
 
 FigPos = get(gcf,'Position');
-S_Pos = [50 20 uint16(FigPos(3)-150)+1 20];
-Stxt_Pos = [50 90 uint16(FigPos(3)-100)+1 15];
-Wtxt_Pos = [20 20 60 20];
-Wval_Pos = [75 20 60 20];
-Ltxt_Pos = [140 20 45 20];
-Lval_Pos = [180 20 60 20];
-BtnStPnt = uint16(FigPos(3)-210)+1;
-if BtnStPnt < 360
-    BtnStPnt = 360;
-end
-Btn_Pos = [BtnStPnt 20 80 20];
-ChBx_Pos = [BtnStPnt+90 20 100 20];
-Vwtxt_Pos = [255 20 35 20];
-VAxBtn_Pos = [490 20 15 20];
-VSgBtn_Pos = [510 20 15 20];
-VCrBtn_Pos = [530 20 15 20];
+startUI = (FigPos(3)-lengthUI)/2;
+S_Pos = [startUI 38 lengthUI 20]; % [273 39 493 20]
+Stxt_Pos = [startUI+lengthUI-71 FigPos(4)-29 71 14]; %[711 721 55 14]
+
+UInow = startUI;    Wtxt_Pos    = [UInow 20 60 20]; % 255
+UInow = UInow +55;  Wval_Pos    = [UInow 20 60 20]; % 55; 310
+UInow = UInow +65;  Ltxt_Pos    = [UInow 20 45 20]; % 65; 375
+UInow = UInow +40;  Lval_Pos    = [UInow 20 60 20]; % 40; 415
+UInow = UInow +65;  Btn_Pos     = [UInow 20 80 20]; %70; 485
+UInow = UInow +85; Vwtxt_Pos    = [UInow 20 35 20]; % 110; 595
+UInow = UInow +40;  VAxBtn_Pos  = [UInow 20 15 20]; % 40
+UInow = UInow +20;  VSgBtn_Pos  = [UInow 20 15 20]; % 20
+UInow = UInow +20;  VCrBtn_Pos  = [UInow 20 15 20]; % 20
+UInow = UInow +20;  VReBtn_Pos  = [UInow 20 35 20]; % 20
+UInow = UInow +40;  ChBx_Pos    = [UInow 20 80 20];   % 30
+% Total Length: 450+80
+%         
+% FigPos = get(gcf,'Position');
+% S_Pos = [50 20 uint16(FigPos(3)-150)+1 20];
+% Stxt_Pos = [50 90 uint16(FigPos(3)-100)+1 15];
+% Wtxt_Pos = [20 20 60 20];
+% Wval_Pos = [75 20 60 20];
+% Ltxt_Pos = [140 20 45 20];
+% Lval_Pos = [180 20 60 20];
+% BtnStPnt = uint16(FigPos(3)-210)+1;
+% if BtnStPnt < 360
+%     BtnStPnt = 360;
+% end
+% Btn_Pos = [BtnStPnt 20 80 20];
+% ChBx_Pos = [BtnStPnt+90 20 100 20];
+% Vwtxt_Pos = [255 20 35 20];
+% VAxBtn_Pos = [490 20 15 20];
+% VSgBtn_Pos = [510 20 15 20];
+% VCrBtn_Pos = [530 20 15 20];
 
 if sno > 1
-%    shand = uicontrol('Style', 'slider','Min',1,'Max',sno,'Value',S,'SliderStep',[1/(sno-1) 10/(sno-1)],'Position', S_Pos,'Callback', {@SliceSlider, Img});
-%    stxthand = uicontrol('Style', 'text','Position', Stxt_Pos,'String',sprintf('Slice# %d / %d',S, sno), 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', SFntSz);
+   shand = uicontrol('Style', 'slider','Min',1,'Max',sno,'Value',S,'SliderStep',[1/(sno-1) 10/(sno-1)],'Position', S_Pos,'Callback', {@SliceSlider, Img});
+   stxthand = uicontrol('Style', 'text','Position', Stxt_Pos,'String',sprintf('Slice# %d / %d',S, sno), 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', SFntSz);
 else
-%    stxthand = uicontrol('Style', 'text','Position', Stxt_Pos,'String','2D image', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', SFntSz);
+   stxthand = uicontrol('Style', 'text','Position', Stxt_Pos,'String','2D image', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', SFntSz);
 end    
-%ltxthand = uicontrol('Style', 'text','Position', Ltxt_Pos,'String','Level: ', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', LFntSz);
-%wtxthand = uicontrol('Style', 'text','Position', Wtxt_Pos,'String','Window: ', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', WFntSz);
-%lvalhand = uicontrol('Style', 'edit','Position', Lval_Pos,'String',sprintf('%6.0f',LevV), 'BackgroundColor', [1 1 1], 'FontSize', LVFntSz,'Callback', @WinLevChanged);
-%wvalhand = uicontrol('Style', 'edit','Position', Wval_Pos,'String',sprintf('%6.0f',Win), 'BackgroundColor', [1 1 1], 'FontSize', WVFntSz,'Callback', @WinLevChanged);
-%Btnhand = uicontrol('Style', 'pushbutton','Position', Btn_Pos,'String','Auto W/L', 'FontSize', BtnSz, 'Callback' , @AutoAdjust);
-%ChBxhand = uicontrol('Style', 'checkbox','Position', ChBx_Pos,'String','Fine Tune', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', ChBxSz);
-%Vwtxthand = uicontrol('Style', 'text','Position', Vwtxt_Pos,'String','View: ', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', LFntSz);
+ltxthand = uicontrol('Style', 'text','Position', Ltxt_Pos,'String','Level: ', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', LFntSz);
+wtxthand = uicontrol('Style', 'text','Position', Wtxt_Pos,'String','Window: ', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', WFntSz);
+lvalhand = uicontrol('Style', 'edit','Position', Lval_Pos,'String',sprintf('%6.0f',LevV), 'BackgroundColor', [1 1 1], 'FontSize', LVFntSz,'Callback', @WinLevChanged);
+wvalhand = uicontrol('Style', 'edit','Position', Wval_Pos,'String',sprintf('%6.0f',Win), 'BackgroundColor', [1 1 1], 'FontSize', WVFntSz,'Callback', @WinLevChanged);
+Btnhand = uicontrol('Style', 'pushbutton','Position', Btn_Pos,'String','Auto W/L', 'FontSize', BtnSz, 'Callback' , @AutoAdjust);
+ChBxhand = uicontrol('Style', 'checkbox','Position', ChBx_Pos,'String','Fine Tune', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', ChBxSz);
+Vwtxthand = uicontrol('Style', 'text','Position', Vwtxt_Pos,'String','View: ', 'BackgroundColor', [0.8 0.8 0.8], 'FontSize', LFntSz);
 VAxBtnhand = uicontrol('Style', 'pushbutton','Position', VAxBtn_Pos,'String','A', 'FontSize', BtnSz, 'Callback' , @AxialView);
 VSgBtnhand = uicontrol('Style', 'pushbutton','Position', VSgBtn_Pos,'String','S', 'FontSize', BtnSz, 'Callback' , @SagittalView);
 VCrBtnhand = uicontrol('Style', 'pushbutton','Position', VCrBtn_Pos,'String','C', 'FontSize', BtnSz, 'Callback' , @CoronalView);
@@ -248,28 +348,38 @@ set(gcf,'KeyPressFcn', @KeyPressCallback);
 % -=< Figure resize callback function >=-
     function figureResized(object, eventdata)
         FigPos = get(gcf,'Position');
-        S_Pos = [50 45 uint16(FigPos(3)-100)+1 20];
-        Stxt_Pos = [50 65 uint16(FigPos(3)-100)+1 15];
-        BtnStPnt = uint16(FigPos(3)-210)+1;
-        if BtnStPnt < 360
-            BtnStPnt = 360;
-        end
-        Btn_Pos = [BtnStPnt 20 80 20];
-        ChBx_Pos = [BtnStPnt+90 20 100 20];
+        startUI = (FigPos(3)-lengthUI)/2; 
+        S_Pos = [startUI 38 lengthUI 20]; %[startUI 38 (startUI+530-startUI) 20];
+        Stxt_Pos = [startUI+lengthUI-71 FigPos(4)-29 71 14];
         if sno > 1
-           % set(shand,'Position', S_Pos);
+            set(shand,'Position', S_Pos);
         end
-        %set(stxthand,'Position', Stxt_Pos);
-        %set(ltxthand,'Position', Ltxt_Pos);
-        %set(wtxthand,'Position', Wtxt_Pos);
-        %set(lvalhand,'Position', Lval_Pos);
-        %set(wvalhand,'Position', Wval_Pos);
-        %set(Btnhand,'Position', Btn_Pos);
-        %set(ChBxhand,'Position', ChBx_Pos);
-        %set(Vwtxthand,'Position', Vwtxt_Pos);
-        %set(VAxBtnhand,'Position', VAxBtn_Pos);
-        %set(VSgBtnhand,'Position', VSgBtn_Pos);
-        %set(VCrBtnhand,'Position', VCrBtn_Pos);
+        UInow = startUI;    Wtxt_Pos    = [UInow 20 60 20]; % 255
+        UInow = UInow +55;  Wval_Pos    = [UInow 20 60 20]; % 55; 310
+        UInow = UInow +65;  Ltxt_Pos    = [UInow 20 45 20]; % 65; 375
+        UInow = UInow +40;  Lval_Pos    = [UInow 20 60 20]; % 40; 415
+        UInow = UInow +65;  Btn_Pos     = [UInow 20 80 20]; %70; 485
+        UInow = UInow +85;  Vwtxt_Pos    = [UInow 20 35 20]; % 110; 595
+        UInow = UInow +40;  VAxBtn_Pos  = [UInow 20 15 20]; % 40
+        UInow = UInow +20;  VSgBtn_Pos  = [UInow 20 15 20]; % 20
+        UInow = UInow +20;  VCrBtn_Pos  = [UInow 20 15 20]; % 20
+        UInow = UInow +20;  VReBtn_Pos  = [UInow 20 35 20]; % 20
+        UInow = UInow +40;  ChBx_Pos    = [UInow 20 80 20];   % 30
+        % Total Length: 450
+        
+        set(wtxthand,'Position', Wtxt_Pos);
+        set(wvalhand,'Position', Wval_Pos);
+        set(ltxthand,'Position', Ltxt_Pos);
+        set(lvalhand,'Position', Lval_Pos);
+        set(Btnhand,'Position', Btn_Pos);
+        set(ChBxhand,'Position', ChBx_Pos);
+        set(Vwtxthand,'Position', Vwtxt_Pos);
+        set(VAxBtnhand,'Position', VAxBtn_Pos);
+        set(VSgBtnhand,'Position', VSgBtn_Pos);
+        set(VCrBtnhand,'Position', VCrBtn_Pos);
+        %set(VReBtnhand,'Position', VReBtn_Pos);
+        set(stxthand,'Position', Stxt_Pos);
+        
     end
 
 % -=< Slice slider callback function >=-
@@ -453,24 +563,11 @@ set(gcf,'KeyPressFcn', @KeyPressCallback);
             SagittalView([]);       
         elseif (strcmpi(eventdata.Key,'x'));
             if MainImage(1)==1
-                MainImage=wiresIX;
-            elseif MainImage(1)==wiresIX(1)
+                MainImage=3:size(Img,4);
+            elseif MainImage(1)==3
                 MainImage=1;
-            elseif MainImage(1)==gridIX
-                MainImage=wiresIX;
             end
             set(ImHndl,'cdata',squeeze(Img(XImage,YImage,S,MainImage)));
-        elseif (strcmpi(eventdata.Key,'g'));
-            if size(Img,4)==4 && strcmp(callingfunction,'normalization') % only do if grid is available.
-                if MainImage(1)==1
-                    MainImage=gridIX;
-                elseif MainImage(1)==gridIX
-                    MainImage=1;
-                elseif MainImage(1)==wiresIX
-                    MainImage=gridIX;
-                end
-                set(ImHndl,'cdata',squeeze(Img(XImage,YImage,S,MainImage)));
-            end
         elseif (strcmpi(eventdata.Key,'z')) % toggles zoom in/out
             ImgZ=~ImgZ;
             switch View
@@ -640,9 +737,11 @@ end
 function showhelptext
 
 hold on
-helptext=text(5,5,{'Controls:','Click to show reference image','Use </> to increase box size while clicking',...
-    'Z: Zoom in/out','X: Hybrid view on/off','Arrow keys / Mouse wheel: Scroll through image','A: Axial view',...
-    'C: Coronar view','S: Saggital view'},'Color','w','HorizontalAlignment','left','VerticalAlignment','top');
+helptext=text(5,5,{'Controls:','Click to show reference image','Use </> to increase box size while clicking'},...
+     'Color','w','HorizontalAlignment','left','VerticalAlignment','top');
+%    'Z: Zoom in/out','X: Hybrid view on/off','Arrow keys / Mouse wheel: Scroll through image','A: Axial view',...
+%    'C: Coronar view','S: Saggital view'},
+
 end
 
 % Included for completeness (usually in own file)
@@ -684,4 +783,3 @@ function [fig_pointer_pos, axes_pointer_val] = pointer2d(fig_hndl,axes_hndl)
         axes_pointer_val = sum(axes_pointer_line)/2;
     end;
 end
-% -=< Maysam Shahedi (mshahedi@gmail.com), April 19, 2013>=-

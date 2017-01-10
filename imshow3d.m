@@ -1,10 +1,27 @@
 function imshow3d(nii)
+%
+% This funciton displays a NifTi image. 
+%
+% SYNTAX: 
+%       imshow3d('anat_t1.nii')
+%       imshow3d('Users/user/Images/anat_t1.nii')
+%       imshow3d(anat_t1)
+%       imshow3d(anat_t1.img)
+%
+% Example:
+%       anat_t1 = load_nii('Users/user/Images/anat_t1.nii')
+%       imshow3d(anat_t1.img)
+%
 % INPUT:
-%   filename: full filename to .nii image or name of file in current
-%   diretory
+%   nii: 
+%        case 1) filename: full filename to .nii image or name of file in 
+%                current diretory
+%        case 2) nii: structure loaded into matlab workspace from load_nii.m 
+%        case 3) img: NxMx3 image in workspace, e.g. nii.img from load_nii.m
+%
 %
 % Part of this file is copied and modified from: 
-% imshow3Dfull by -=< Maysam Shahedi (mshahedi@gmail.com), September 22, 2016>=-
+% imshow3Dfull by Maysam Shahedi (mshahedi@gmail.com), September 22, 2016
 % Available for Download at:
 % https://www.mathworks.com/matlabcentral/fileexchange/47463-imshow3dfull--3d-imshow-in-3-views-
 %
@@ -13,7 +30,7 @@ function imshow3d(nii)
 % Available for Download at:
 % https://www.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image
 % -------------------------------------------------------------------------
-% Ari Kappel
+% Ari Kappel, 2016
 
 %% 
 %%%%%%%%% USER SETS PREFERENCES %%%%%%%%%%%%%

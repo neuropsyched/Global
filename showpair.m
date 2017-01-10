@@ -1,84 +1,16 @@
-function imshow3dpair(ref,src,addstr)
-
-if nargin==3
-    figtit=addstr;
-elseif nargin==2
-    figtit='';
-elseif nargin==1
-    error('Please provide two images')
-end
-
-if ischar(ref)
-    ref_filename = ref;
-    % check if file exists
-    if ~exist(ref_filename,'file')
-        sprintf('%sr', ['File does not exist: Cannot find ' ref_filename])
-        [ref_filename,ref_path] = uigetfile();
-        ref_filename = fullfile(ref_path,ref_filename);
-    end
-    try
-        nii = load_nii(ref_filename);
-    catch
-        nii = load_untouch_nii(ref_filename);
-    end
-        ref = nii.img;    
-elseif isstruct(ref)
-    if isfield(ref,'img')
-        nii = ref; clear ref
-        ref = nii.img;
-    else
-        error('Error in input file')
-    end
-end
-
-% Prepare Source
-if ischar(src)
-    src_filename = src;
-    % check if file exists
-    if ~exist(src_filename,'file')
-        sprintf('%sr', ['File does not exist: Cannot find ' src_filename])
-        [src_filename,src_path] = uigetfile();
-        src_filename = fullfile(src_path,src_filename);
-    end
-    try
-        nii = load_nii(src_filename);
-    catch
-        nii = load_untouch_nii(src_filename);
-    end
-        src = nii.img;    
-elseif isstruct(src)
-    if isfield(src,'img')
-        nii = src; clear src
-        src = nii.img;
-    else
-        error('Error in input file')
-    end
-end
-
-
-% Check for 3d image
-% dim = size(squeeze(nii));
-if length(size(squeeze(ref)))<3 || length(size(squeeze(src)))<3
-    error('Error: Please choose a 3-dimensional image')
-end
-    
-ref=single(ref);
-src=single(src);
-
-% Normalize window level
-norm_ref = ref/max(ref(:));
-norm_src = src/max(src(:));
-
-wim = cat(4,norm_ref,norm_src);
-
-%%
-% function  showpair( Img, addstring)
+function  showpair( Img, addstring)
 % this function is based on IMSHOW3DFULL by Maysam Shahedi and supports
 % truecolor images. Windowed view is adapted from MAGNIFY by Rick Hindman.
 % 
 % Todd Herrington, 2016-03-16
 
-Img = wim;
+if nargin==1
+    figtit='Coregistration';
+elseif nargin==2
+    figtit=['Coregistration',', ',addstring];
+else
+    figtit='';
+end
 isp=figure('color','k','Name',figtit,'NumberTitle','off','MenuBar','none','DockControls','off','ToolBar','none');
 ea_maximize(isp);
 Img=single(Img);
