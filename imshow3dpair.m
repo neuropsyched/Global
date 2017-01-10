@@ -1,5 +1,6 @@
 function imshow3dpair(ref,src,addstr)
 
+
 if nargin==3
     figtit=addstr;
 elseif nargin==2
@@ -55,6 +56,10 @@ elseif isstruct(src)
     end
 end
 
+% Check dimensions
+if ~isequal(size(ref),size(src))
+    error('Please coregister images before viewing')
+end
 
 % Check for 3d image
 % dim = size(squeeze(nii));
