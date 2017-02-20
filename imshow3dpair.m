@@ -1,6 +1,40 @@
 function imshow3dpair(ref,src,addstr)
-
-
+%
+% This funciton displays a pair of images overlaid. 
+%
+% SYNTAX: 
+%       imshow3dpair('anat_t1.nii','mask.nii','title')
+%       imshow3dpair('Users/user/Images/anat_t1.nii','Users/user/Images/','title')
+%       imshow3d(anat_t1,mask,'title')
+%       imshow3d(anat_t1.img,mask.img,'title')
+%
+% Example:
+%       anat_t1 = load_nii('Users/user/Images/anat_t1.nii')
+%       imshow3d(anat_t1.img)
+%
+% INPUT:
+%   ref,src: 
+%        case 1) filename: full filename to .nii image or name of file in 
+%                current diretory
+%        case 2) nii: structure loaded into matlab workspace from load_nii.m 
+%        case 3) img: NxMx3 image in workspace, e.g. nii.img from load_nii.m
+%   addstr:
+%        optional title string
+%
+% Part of this file is copied and modified from: 
+% ea_showpair by Todd Herrington, as part of the LEAD-DBS Neuroimagin Suite
+% and from imshow3Dfull by Maysam Shahedi (mshahedi@gmail.com), September 22, 2016
+% Available for Download at:
+% https://www.mathworks.com/matlabcentral/fileexchange/47463-imshow3dfull--3d-imshow-in-3-views-
+%
+% Requires NifTi Toolbox
+% by Jimmy Shen
+% Available for Download at:
+% https://www.mathworks.com/matlabcentral/fileexchange/8797-tools-for-nifti-and-analyze-image
+% __________________________________________________________________________________
+% Copyright (C) 2017 University of Pittsburgh (UPMC), Brain Modulation Lab
+% Ari Kappel
+%%
 if nargin==3
     figtit=addstr;
 elseif nargin==2
@@ -77,11 +111,6 @@ norm_src = src/max(src(:));
 wim = cat(4,norm_ref,norm_src);
 
 %%
-% function  showpair( Img, addstring)
-% this function is based on IMSHOW3DFULL by Maysam Shahedi and supports
-% truecolor images. Windowed view is adapted from MAGNIFY by Rick Hindman.
-% 
-% Todd Herrington, 2016-03-16
 
 Img = wim;
 isp=figure('color','k','Name',figtit,'NumberTitle','off','MenuBar','none','DockControls','off','ToolBar','none');
