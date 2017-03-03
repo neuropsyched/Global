@@ -1,4 +1,4 @@
-function progress(varargin)
+function myprogress(varargin)
 % Small function to show progress in command window
 % Example:
 %       progress(i/nfiles, 'reading file %d of %d\n', i, nfiles);
